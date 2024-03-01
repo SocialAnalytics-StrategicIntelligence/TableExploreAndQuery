@@ -1,0 +1,137 @@
+---
+title: "Explore and Query"
+output: html_notebook
+---
+```{r}
+rm(list = ls())
+denguelink='https://github.com/SocialAnalytics-StrategicIntelligence/DataInTables/raw/main/dengueSub.Rds'
+
+
+
+dengue=readRDS(url(denguelink))
+
+```
+```{r}
+str(dengue)
+```
+
+```{r}
+library(ggplot2)
+ggplot(data=dengue, aes(y=edad )) + geom_boxplot(aes(x=enfermedad))
+```
+
+```{r}
+ggplot(data=dengue, aes(y=edad )) + geom_boxplot(aes(x=factor(ano))) + labs(x='año')
+
+```
+
+```{r}
+ggplot(data=dengue, aes(y=edad )) + geom_boxplot(aes(x=factor(ano))) + labs(x='año') +facet_grid(enfermedad~.)
+
+```
+```{r}
+dengue=dengue[dengue$ano>=2010,]
+dengue
+```
+
+
+```{r}
+
+
+ggplot(data=dengue, aes(y=edad )) + geom_boxplot(aes(x=factor(ano))) + labs(x='año') +facet_grid(enfermedad~.)
+
+```
+
+
+
+```{r}
+dengueAge_year_Long=aggregate(data=dengue, edad~ano+enfermedad,mean)
+dengueAge_year_Long
+
+```
+```{r}
+ggplot(data=dengueAge_year_Long, aes(y=edad)) + geom_line(aes(x=factor(ano),color=enfermedad,group=enfermedad)) + labs(x='año',y='edad_promedio')# +facet_grid(variable~.)
+```
+
+
+```{r}
+# long to wide
+dengueCase_year_Long=aggregate(data=dengue, case~ano+enfermedad,sum)
+dengueCase_year_Long
+```
+```{r}
+ggplot(data=dengueCase_year_Long, aes(y=case)) + geom_line(aes(x=factor(ano),color=enfermedad,group=enfermedad)) + labs(x='año',y='casos totales') +
+  scale_y_log10()
+# +facet_grid(variable~.)
+```
+
+
+
+```{r}
+provCounts_year=aggregate(data=dengue, case ~ ano + departamento + provincia, sum)
+provCounts_year
+```
+
+```{r}
+library(dplyr)
+
+#find rows that contain max points by team and position
+worstProv_year=provCounts_year %>%
+  group_by(ano,departamento) %>%
+  slice(which.max(case))
+worstProv_year
+```
+
+```{r}
+table(worstProv_year$provincia,worstProv_year$departamento)
+```
+```{r}
+DepaProv=as.data.frame(table(worstProv_year$provincia,worstProv_year$departamento))
+names(DepaProv)=c("prov","depa","count")
+```
+
+
+```{r heatDescending, eval=TRUE}
+# default 
+
+baseHeat  = ggplot(DepaProv, aes(x = reorder(depa,count), y = reorder(prov,count), fill=count)) + theme_classic()
+heatDefault = baseHeat +  geom_tile(show.legend = F,alpha = ifelse(DepaProv$count>0, 1, 0)) #here
+
+heatBetter=heatDefault +scale_fill_gradientn(colours = rev(heat.colors(5)))
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4)) +
+                   geom_text(aes(label=ifelse(count>10,count,"")),fontface='bold', color='white')
+
+
+```
+```{r}
+depaLevel_year=reshape2::dcast(dengue, ano + departamento ~ enfermedad, value.var="case",sum)
+depaLevel_year
+```
+```{r}
+depaLevel_year$share100=100*round(depaLevel_year$ALARMA/depaLevel_year$SIN_SEÑALES,2)
+summary(depaLevel_year$share100)
+```
+```{r}
+theBreaks=c(0,10,20,50,80,100,200)
+theBreaksLabels=c("less10%","10-20%","21-50","51-80%","81-100%","above100%")
+# depaLevel_year[!is.finite(depaLevel_year$share100),]
+depaLevel_year=depaLevel_year[is.finite(depaLevel_year$share100),]
+depaLevel_year$share100_ints=cut(depaLevel_year$share100,breaks = theBreaks,labels = theBreaksLabels,right = T,ordered_result = T,include.lowest = T)
+table(depaLevel_year$share100_ints)        
+```
+
+
+
+```{r heatDescending2, eval=TRUE}
+# default 
+
+baseHeat  = ggplot(depaLevel_year, aes(x = ano, y = reorder(departamento,as.numeric(share100_ints)), fill=share100_ints)) + theme_classic()
+heatDefault = baseHeat +  geom_tile(show.legend = T,alpha = ifelse(depaLevel_year$share100>0, 1, 0)) #here
+
+heatBetter=heatDefault +scale_fill_brewer(palette = "Reds")
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4))
+
+
+```
