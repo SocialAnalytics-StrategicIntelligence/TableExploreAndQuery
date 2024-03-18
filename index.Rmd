@@ -1,0 +1,198 @@
+---
+title: ''
+output: bookdown::html_document2
+---
+
+<img src="https://i.imgur.com/6U6q5jQ.png"/>
+
+
+<h1>Social Analytics and Strategic Intelligence</h1>
+
+<h2>Session 1: Explore and Query</h2>
+
+
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy(position = c('top', 'right'))
+```
+
+
+Let's get the data we produced in Pytho into R. Here, **ByYear_stats**:
+
+```{r, warning=FALSE, eval=FALSE}
+rm(list = ls())
+denguelink='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/ByYear_stats.pkl'
+
+# opening the pickle data:
+
+library(reticulate)
+# py_install("pandas") # install pandas for R environment
+pd <- import("pandas")
+dengueStats <- pd$read_pickle(denguelink)
+
+# you goy the right data type!
+str(dengueStats) 
+
+
+```
+
+Basic stats:
+
+```{r, eval=FALSE}
+summary(dengueStats)
+```
+
+```{r, eval=FALSE}
+library(ggplot2)
+datagg=ggplot(data=dengueStats)
+datagg + geom_boxplot(aes(y=edad_mean)) + coord_flip()
+```
+```{r, eval=FALSE}
+datagg + geom_boxplot(aes(y=edad_mean, x=enfermedad)) + coord_flip()
+```
+
+```{r, eval=FALSE}
+datagg + geom_boxplot(aes(y=edad_mean, x=as.ordered(ano))) + facet_grid(enfermedad~.)
+```
+
+Are the symptoms distributed fairly the same accross ages?
+
+* Using the _mean_:
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+library(ggplot2)
+ggplot(data=dengueStats,aes(x=ano,y=edad_mean)) + 
+    geom_point() + 
+    geom_smooth(aes(color=enfermedad))
+
+
+```
+
+* Using the _median_:
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+ggplot(data=dengueStats,aes(x=ano,y=edad_median)) + 
+    geom_point() + 
+    geom_smooth(aes(color=enfermedad))
+```
+
+How is the collection of information?
+
+* Basic plot
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+ggplot(data=dengueStats,aes(x=ano,y=case_sum)) + 
+    geom_point() + 
+    geom_smooth(aes(color=enfermedad))
+```
+
+* Semi-log plot
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+ggplot(data=dengueStats,aes(x=ano,y=case_sum)) + 
+    geom_point() + 
+    geom_smooth(aes(color=enfermedad)) + scale_y_log10(labels = scales::comma)
+```
+
+
+Let's bring the same  data in long format (*ByYear_LongStats*):
+
+
+```{r, eval=FALSE}
+denguelink2='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/ByYear_LongStats.pkl'
+
+dengueLongStats <- pd$read_pickle(denguelink2)
+
+
+str(dengueLongStats) 
+```
+
+
+Facets will help create complex plots in an easy way:
+
+* All the stats by year (smooth - semilog):
+
+```{r, warning=FALSE, message=FALSE, eval=FALSE}
+facets= ggplot(data=dengueLongStats,
+               aes(x=ano,y=statsValue,color=enfermedad)) + theme_light() +
+        facet_grid(statsName~.,scales = 'free_y') + 
+    scale_y_log10(labels=scales::comma) 
+facets +    geom_smooth() 
+```
+
+```{r, eval=FALSE}
+facets +
+    geom_line() 
+```
+
+The data *worst_ProvYear_alarma_Frequency* tell us the frequency of the worst province by region by year:
+
+```{r, eval=FALSE}
+denguelink3='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/worst_ProvYear_alarma_Frequency.csv'
+
+dengueProvWorst <- read.csv(denguelink3)
+
+
+str(dengueProvWorst) 
+```
+For instance, LORETO has data for 14 years:
+```{r, eval=FALSE}
+dengueProvWorst[dengueProvWorst$departamento=='LORETO',]
+```
+
+In one year, ALTO AMAZONAS was the worst case of people with *alarm* situation; while MAYNAS had that position for 13 years.
+
+What is the worst cases?
+
+```{r, eval=FALSE}
+dengueProvWorst[order(-dengueProvWorst$case),]
+```
+
+
+We could see the distribution of the worst provinces:
+
+```{r heatDescending, eval=FALSE}
+
+baseHeat  = ggplot(dengueProvWorst, aes(x = reorder(departamento,case), y = reorder(provincia,case), fill=case)) + theme_classic()
+heatDefault = baseHeat +  geom_tile() #here
+
+heatBetter=heatDefault +scale_fill_gradient(low = 'yellow',high = 'black')
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4)) +
+                   geom_text(aes(label=ifelse(case>=10,case,"")),
+                             size=6,fontface='bold', color='white')
+
+
+```
+
+Let' see the info about rateAlarma:
+
+```{r, eval=FALSE}
+denguelink4='https://raw.githubusercontent.com/SocialAnalytics-StrategicIntelligence/TableOperations/main/dataFiles/ByYearPlace.pkl'
+
+dengueYearPlace <- pd$read_pickle(denguelink4)
+
+str(dengueYearPlace) 
+```
+Basic stats:
+
+```{r, eval=FALSE}
+summary(dengueYearPlace)
+```
+
+
+Where and when?
+
+```{r heatDescending2, eval=FALSE}
+# default 
+
+baseHeat  = ggplot(dengueYearPlace, aes(x = as.factor(ano),
+                                       y =reorder(departamento,
+                                                  rateAlarma), 
+                                       fill=rateAlarma.cut)) + theme_classic()
+heatDefault = baseHeat +  geom_tile(show.legend = T) #here
+
+heatBetter=heatDefault +scale_fill_brewer(palette = "Reds")
+heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
+                   axis.text.y = element_text(size=4))
+```
