@@ -21,13 +21,13 @@ Let's bring the data in long format (*ByYear_LongStats*):
 
 ```{r, eval=TRUE}
 rm(list = ls())
-denguelink2='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/ByYear_LongStats.pkl'
+denguelink1='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/ByYear_LongStats.pkl'
 
 library(reticulate)
 # py_install("pandas") # install pandas for R environment
 pd <- import("pandas")
 
-dengueLongStats <- pd$read_pickle(denguelink2)
+dengueLongStats <- pd$read_pickle(denguelink1)
 
 
 str(dengueLongStats) 
@@ -37,7 +37,7 @@ str(dengueLongStats)
 * The amount of infected through the years? by symptoms level?
 
 
-```{r, warning=FALSE, message=FALSE, eval=TRUE}
+```{r, warning=FALSE, message=FALSE, eval=TRUE, fig.width=14, fig.height=12}
 library(ggplot2)
 
 facets= ggplot(data=dengueLongStats,
@@ -48,7 +48,7 @@ facets +
     facet_grid(statsName~.,scales = 'free_y') 
 ```
 
-```{r, eval=TRUE}
+```{r, eval=TRUE, fig.width=14, fig.height=12}
 facets +
     geom_line() + 
     facet_grid(statsName~.,scales = 'free_y') 
@@ -58,9 +58,9 @@ Most affected provinces through the years?
 The data *worst_ProvYear_alarma_Frequency* tell us the frequency of the worst province by region by year:
 
 ```{r, eval=TRUE}
-denguelink3='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/worst_ProvYear_alarma_Frequency.csv'
+denguelink2='https://github.com/SocialAnalytics-StrategicIntelligence/TableOperations/raw/main/dataFiles/worst_ProvYear_alarma_Frequency.csv'
 
-dengueProvWorst <- read.csv(denguelink3)
+dengueProvWorst <- read.csv(denguelink2)
 
 
 str(dengueProvWorst) 
@@ -86,7 +86,7 @@ dengueProvWorst[order(-dengueProvWorst$case),]
 
 We could see the distribution of the worst provinces:
 
-```{r heatDescending, eval=TRUE}
+```{r heatDescending, eval=TRUE, fig.width=14, fig.height=12}
 
 baseHeat  = ggplot(dengueProvWorst, aes(x = reorder(departamento,case), y = reorder(provincia,case), fill=case)) + theme_classic()
 heatDefault = baseHeat +  geom_tile() #here
@@ -103,9 +103,9 @@ heatBetter + theme(axis.text.x = element_text(angle = 60,vjust = 1,hjust = 1),
 Let' see the info about rateAlarma:
 
 ```{r, eval=TRUE}
-denguelink4='https://raw.githubusercontent.com/SocialAnalytics-StrategicIntelligence/TableOperations/main/dataFiles/ByYearPlace.pkl'
+denguelink3='https://raw.githubusercontent.com/SocialAnalytics-StrategicIntelligence/TableOperations/main/dataFiles/ByYearPlace.pkl'
 
-dengueYearPlace <- pd$read_pickle(denguelink4)
+dengueYearPlace <- pd$read_pickle(denguelink3)
 
 str(dengueYearPlace) 
 ```
@@ -118,7 +118,7 @@ summary(dengueYearPlace)
 
 Where and when?
 
-```{r heatDescending2, eval=TRUE}
+```{r heatDescending2, eval=TRUE, fig.width=14, fig.height=12}
 # default 
 
 baseHeat  = ggplot(dengueYearPlace, aes(x = as.factor(ano),
